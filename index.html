@@ -3,6 +3,7 @@
 <head>
     <title>YouTube Player</title>
     <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZmMDAwMCIvPjxwb2x5Z29uIHBvaW50cz0iNDAgMzAgNzAgNTAgNDAgNzAiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" type="image/svg+xml">
+    <script src="https://www.youtube.com/iframe_api"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -104,10 +105,7 @@
     </div>
 
     <div class="iframe-container">
-        <iframe id="dynamicFrame" src="about:blank"
-                allowfullscreen
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share">
-        </iframe>
+        <div id="player"></div>
     </div>
 
     <div class="instructions">
@@ -166,16 +164,10 @@
         const { videoId: actualVideoId, startTime } = extractVideoInfo(videoId);
         if (!actualVideoId) return;
 
-        let embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(actualVideoId)}?rel=0`;
-        if (startTime !== null) {
-        embedUrl += `&start=${startTime}`;
-        }
-
-        const frame = document.getElementById('dynamicFrame');
-        frame.src = embedUrl;
-
         const newUrl = `${window.location.origin}${window.location.pathname}?${videoId}`;
         history.pushState({ videoId: videoId }, '', newUrl);
+
+        createPlayer(actualVideoId);
         }
 
         function loadVideo() {
@@ -202,6 +194,68 @@
         const default2VideoId = '9bZkp7q19f0';
         document.getElementById('videoInput').value = default2VideoId;
         loadVideoById(default2VideoId);
+        }
+
+        let player;
+        let currentVideoId = '';
+
+        function onYouTubeIframeAPIReady() {
+        if (window.location.search) {
+        const input = window.location.search.substring(1).trim();
+        if (input) {
+        const { videoId, startTime } = extractVideoInfo(input);
+        if (videoId) {
+        createPlayer(videoId);
+        document.getElementById('videoInput').value = videoId;
+        }
+        }
+        }
+        }
+
+        function createPlayer(videoId) {
+        if (player) {
+        player.loadVideoById(videoId);
+        } else {
+        player = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+        'rel': 0,
+        'playsinline': 1,
+        'autoplay': 0
+        },
+        events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+        }
+        });
+        }
+        currentVideoId = videoId;
+        }
+
+        function onPlayerReady(event) {
+        event.target.setVolume(50);
+        const videoInfo = extractVideoInfo(currentVideoId);
+        if (videoInfo.startTime !== null) {
+        event.target.seekTo(videoInfo.startTime, true);
+        }
+        
+        setTimeout(() => {
+        if (document.title === 'YouTube Player' || !document.title.includes('- YouTube Player')) {
+        const videoTitle = player.getVideoData().title;
+        if (videoTitle) {
+        document.title = videoTitle + ' - YouTube Player';
+        }
+        }
+        }, 1000);
+        }
+
+        function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.CUED || event.data === YT.PlayerState.PLAYING) {
+        const videoTitle = player.getVideoData().title;
+        document.title = videoTitle + ' - YouTube Player';
+        }
         }
 
         document.getElementById('videoInput').addEventListener('keypress', function(e) {
