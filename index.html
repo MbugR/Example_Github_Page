@@ -181,7 +181,7 @@
         frame.src = embedUrl;
 
         const newUrl = `${window.location.origin}${window.location.pathname}?${videoId}`;
-        //history.pushState({ videoId: videoId }, '', newUrl);
+        history.replaceState({ videoId: videoId }, '', newUrl);
         }
 
         function loadVideo() {
