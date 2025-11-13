@@ -132,7 +132,7 @@
         if (input) {
         const { videoId, startTime } = extractVideoInfo(input);
         if (videoId) {
-        loadVideoById(input, true); // передаем флаг, что это первоначальная загрузка
+        loadVideoById(input);
         document.getElementById('videoInput').value = videoId;
         }
         }
@@ -166,7 +166,7 @@
         return { videoId: input, startTime: null };
         }
 
-        function loadVideoById(videoId, isInitialLoad = false) {
+        function loadVideoById(videoId) {
         if (!videoId) return;
 
         const { videoId: actualVideoId, startTime } = extractVideoInfo(videoId);
@@ -181,12 +181,7 @@
         frame.src = embedUrl;
 
         const newUrl = `${window.location.origin}${window.location.pathname}?${videoId}`;
-        
-        if (isInitialLoad) {
-            history.replaceState({ videoId: videoId }, '', newUrl);
-        } else {
-            history.pushState({ videoId: videoId }, '', newUrl);
-        }
+        history.pushState({ videoId: videoId }, '', newUrl);
         }
 
         function loadVideo() {
