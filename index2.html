@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Embed YouTube & Twitch Player</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZmMDAwMCIvPjxwb2x5Z29uIHBvaW50cz0iNDAgMzAgNzAgNTAgNDAgNzAiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" type="image/svg+xml">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        #videoInput {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .embed-type-selector {
+            display: flex;
+            gap: 5px;
+        }
+
+        .embed-type-btn {
+            padding: 8px 12px;
+            background: #e9ecef;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .embed-type-btn.active {
+            background: #008cff;
+            color: white;
+        }
+
+        .embed-type-btn:hover:not(.active) {
+            background: #dee2e6;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #008cff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+            button:hover {
+                background: #0066cc;
+            }
+
+        .instructions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+
+        .example {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 3px 6px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Embed YouTube & Twitch Player</h1>
+        <p>Enter a YouTube or Twitch URL or ID below, then select the platform</p>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="videoInput" placeholder="Enter YouTube video ID or Twitch channel/clip URL">
+        <div class="embed-type-selector">
+            <button id="youtubeBtn" class="embed-type-btn active" onclick="selectEmbedType('youtube')">YouTube</button>
+            <button id="twitchBtn" class="embed-type-btn" onclick="selectEmbedType('twitch')">Twitch</button>
+        </div>
+        <button onclick="loadVideo()">Load</button>
+        <button onclick="loadDefault()">Default Video</button>
+        <button onclick="loadDefault2()">Default2 Video</button>
+    </div>
+
+    <div class="iframe-container">
+        <iframe id="dynamicFrame" src="about:blank"
+                allowfullscreen
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share">
+        </iframe>
+    </div>
+
+    <div class="instructions">
+        <h3>How to use:</h3>
+        <p>Enter a YouTube video ID, YouTube URL, Twitch channel name, Twitch clip URL, or Twitch VOD URL, then select the platform (YouTube/Twitch).</p>
+        <p>Add the video/channel ID at the end of the URL after the question mark:</p>
+        <div class="example">siteUrl/?47DewsPXI84 (for YouTube)</div>
+        <div class="example">siteUrl/?monstercat (for Twitch channel)</div>
+        <p>You can also copy the current URL after loading a video and share it - the content will automatically load when the link is opened.</p>
+        <br>
+        <p>javascript:(function(){const v=new URL(location.href).searchParams.get('v');if(!v)return;window.location.href=`https://mbugr.github.io/Example_Github_Page/?${v}`})();</p>
+        <br>
+        <h3>Supported Twitch URLs:</h3>
+        <ul>
+            <li>Channel: https://www.twitch.tv/channelName</li>
+            <li>Clip: https://clips.twitch.tv/clipName or https://www.twitch.tv/.../clip/clipName</li>
+            <li>VOD: https://www.twitch.tv/videos/videoId</li>
+        </ul>
+        <h3>Recommended Extensions:</h3>
+        <ul>
+            <li><a href="https://ublockorigin.com/" target="_blank">uBlock Origin</a> - For ad blocking and improved browsing experience</li>
+            <li><a href="https://sponsor.ajay.app/" target="_blank">SponsorBlock</a> - Skip sponsored content in YouTube videos automatically</li>
+        </ul>
+    </div>
+
+    <script>
+        // Embed type state - defaults to YouTube
+        let currentEmbedType = 'youtube';
+
+        window.addEventListener('DOMContentLoaded', () => {
+        if (window.location.search) {
+        const input = window.location.search.substring(1).trim();
+        if (input) {
+        // Determine embed type based on URL
+        if (input.includes('twitch.tv')) {
+            currentEmbedType = 'twitch';
+            selectEmbedType('twitch');
+        } else {
+            currentEmbedType = 'youtube';
+            selectEmbedType('youtube');
+        }
+        
+        const { videoId, startTime } = extractVideoInfo(input);
+        if (videoId) {
+        loadVideoById(input);
+        document.getElementById('videoInput').value = videoId;
+        }
+        }
+        }
+        });
+
+        function selectEmbedType(type) {
+        currentEmbedType = type;
+        
+        // Update button states
+        const youtubeBtn = document.getElementById('youtubeBtn');
+        const twitchBtn = document.getElementById('twitchBtn');
+        
+        if (type === 'youtube') {
+            youtubeBtn.classList.add('active');
+            twitchBtn.classList.remove('active');
+            document.getElementById('videoInput').placeholder = "Enter YouTube video ID (e.g.: 47DewsPXI84)";
+        } else if (type === 'twitch') {
+            twitchBtn.classList.add('active');
+            youtubeBtn.classList.remove('active');
+            document.getElementById('videoInput').placeholder = "Enter Twitch channel or clip URL";
+        }
+        }
+
+        function extractVideoInfo(input) {
+        // Check for Twitch URLs first
+        if (input.includes('twitch.tv')) {
+            // Handle Twitch channel URLs: https://www.twitch.tv/channelName
+            const channelRegex = /twitch\.tv\/([^\/\?#]+)/i;
+            const channelMatch = input.match(channelRegex);
+            
+            if (channelMatch) {
+                return { videoId: channelMatch[1], startTime: null, type: 'twitch' };
+            }
+            
+            // Handle Twitch clip URLs: https://clips.twitch.tv/clipName or https://www.twitch.tv/.../clip/clipName
+            const clipRegex = /(clips\.twitch\.tv|twitch\.tv\/[^\/]+\/clip)\/([^\/\?#]+)/i;
+            const clipMatch = input.match(clipRegex);
+            
+            if (clipMatch) {
+                return { videoId: clipMatch[2], startTime: null, type: 'twitch-clip' };
+            }
+            
+            // Handle VOD URLs: https://www.twitch.tv/videos/videoId
+            const vodRegex = /twitch\.tv\/videos\/(\d+)/i;
+            const vodMatch = input.match(vodRegex);
+            
+            if (vodMatch) {
+                return { videoId: vodMatch[1], startTime: null, type: 'twitch-vod' };
+            }
+        }
+        
+        // Handle YouTube URLs
+        const idTimeRegex = /^([a-zA-Z0-9_-]{11})[?&](?:t|start)=(\d+)$/;
+        const idTimeMatch = input.match(idTimeRegex);
+
+        if (idTimeMatch) {
+        const videoId = idTimeMatch[1];
+        const startTime = parseInt(idTimeMatch[2]);
+        return { videoId, startTime, type: 'youtube' };
+        }
+
+        if (input.includes('youtube.com') || input.includes('youtu.be')) {
+        const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const timeRegex = /[?&](?:t|start)=(\d+)/;
+
+        const videoIdMatch = input.match(youtubeRegex);
+        const timeMatch = input.match(timeRegex);
+
+        if (videoIdMatch) {
+        const videoId = videoIdMatch[1];
+        const startTime = timeMatch ? parseInt(timeMatch[1]) : null;
+        return { videoId, startTime, type: 'youtube' };
+        }
+        }
+
+        // If it doesn't match any specific pattern, assume it's a YouTube video ID
+        return { videoId: input, startTime: null, type: 'youtube' };
+        }
+
+        function loadVideoById(videoId) {
+        if (!videoId) return;
+
+        const videoInfo = extractVideoInfo(videoId);
+        if (!videoInfo.videoId) return;
+
+        let embedUrl;
+        
+        if (currentEmbedType === 'twitch') {
+            // Handle Twitch embeds
+            if (videoInfo.type === 'twitch-clip') {
+                embedUrl = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(videoInfo.videoId)}&parent=${window.location.hostname}`;
+            } else if (videoInfo.type === 'twitch-vod') {
+                embedUrl = `https://player.twitch.tv/?video=${encodeURIComponent(videoInfo.videoId)}&parent=${window.location.hostname}`;
+            } else {
+                embedUrl = `https://player.twitch.tv/?channel=${encodeURIComponent(videoInfo.videoId)}&parent=${window.location.hostname}`;
+            }
+        } else {
+            // Handle YouTube embeds
+            let youtubeUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoInfo.videoId)}?rel=1`;
+            if (videoInfo.startTime !== null) {
+                youtubeUrl += `&start=${videoInfo.startTime}`;
+            }
+            embedUrl = youtubeUrl;
+        }
+
+        const frame = document.getElementById('dynamicFrame');
+        frame.src = embedUrl;
+
+        const newUrl = `${window.location.origin}${window.location.pathname}?${videoId}`;
+        history.replaceState({ videoId: videoId }, '', newUrl);
+        }
+
+        function loadVideo() {
+        const input = document.getElementById('videoInput').value.trim();
+        if (input) {
+        const videoInfo = extractVideoInfo(input);
+        if (videoInfo.videoId) {
+        loadVideoById(input);
+        } else {
+            if (currentEmbedType === 'twitch') {
+                alert('Please enter a valid Twitch channel name, clip URL, or video URL');
+            } else {
+                alert('Please enter a valid YouTube video ID or URL');
+            }
+        }
+        } else {
+            if (currentEmbedType === 'twitch') {
+                alert('Please enter a Twitch channel name, clip URL, or video URL');
+            } else {
+                alert('Please enter a YouTube video ID or URL');
+            }
+        }
+        }
+
+        function loadDefault() {
+        if (currentEmbedType === 'twitch') {
+            const defaultChannel = 'monstercat';
+            document.getElementById('videoInput').value = defaultChannel;
+            loadVideoById(defaultChannel);
+        } else {
+            const defaultVideoId = 'MrJXtHG1D0E';
+            document.getElementById('videoInput').value = defaultVideoId;
+            loadVideoById(defaultVideoId);
+        }
+        }
+
+        function loadDefault2() {
+        if (currentEmbedType === 'twitch') {
+            const defaultChannel = 'riotgames';
+            document.getElementById('videoInput').value = defaultChannel;
+            loadVideoById(defaultChannel);
+        } else {
+            const default2VideoId = '9bZkp7q19f0';
+            document.getElementById('videoInput').value = default2VideoId;
+            loadVideoById(default2VideoId);
+        }
+        }
+
+        document.getElementById('videoInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+        loadVideo();
+        }
+        });
+    </script>
+</body>
+</html>
+
