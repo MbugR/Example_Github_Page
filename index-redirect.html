@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirect to YouTube Video</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZmMDAwMCIvPjxwb2x5Z29uIHBvaW50cz0iNDAgMzAgNzAgNTAgNDAgNzAiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" type="image/svg+xml">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .instructions {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+
+        .example {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 3px 6px;
+            border-radius: 3px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Redirect to YouTube Video</h1>
+        <p>You will be redirected to the YouTube video shortly...</p>
+    </div>
+    <div class="instructions">
+        <h3>How to use:</h3>
+        <p>Add the video ID at the end of the URL after the question mark:</p>
+        <div class="example">siteUrl/?MrJXtHG1D0E</div>
+        <p>The page will automatically redirect to the YouTube video.</p>
+        <br>
+        <h3>Recommended Extensions:</h3>
+        <ul>
+            <li><a href="https://ublockorigin.com/" target="_blank">uBlock Origin</a> - For ad blocking and improved browsing experience</li>
+            <li><a href="https://sponsor.ajay.app/" target="_blank">SponsorBlock</a> - Skip sponsored content in YouTube videos automatically</li>
+        </ul>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+        if (window.location.search) {
+        const input = window.location.search.substring(1).trim();
+        if (input) {
+        const { videoId, startTime } = extractVideoInfo(input);
+        if (videoId) {
+        redirectToVideo(input);
+        }
+        }
+        }
+        });
+
+        function extractVideoInfo(input) {
+        const idTimeRegex = /^([a-zA-Z0-9_-]{11})[?&](?:t|start)=(\d+)$/;
+        const idTimeMatch = input.match(idTimeRegex);
+
+        if (idTimeMatch) {
+        const videoId = idTimeMatch[1];
+        const startTime = parseInt(idTimeMatch[2]);
+        return { videoId, startTime };
+        }
+
+        if (input.includes('youtube.com') || input.includes('youtu.be')) {
+        const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const timeRegex = /[?&](?:t|start)=(\d+)/;
+
+        const videoIdMatch = input.match(youtubeRegex);
+        const timeMatch = input.match(timeRegex);
+
+        if (videoIdMatch) {
+        const videoId = videoIdMatch[1];
+        const startTime = timeMatch ? parseInt(timeMatch[1]) : null;
+        return { videoId, startTime };
+        }
+        }
+
+        return { videoId: input, startTime: null };
+        }
+
+        function redirectToVideo(videoId) {
+        if (!videoId) return;
+
+        const { videoId: actualVideoId, startTime } = extractVideoInfo(videoId);
+        if (!actualVideoId) return;
+
+        let youtubeUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(actualVideoId)}?rel=1`;
+        if (startTime !== null) {
+        youtubeUrl += `&start=${startTime}`;
+        }
+
+        window.location.href = youtubeUrl;
+        }
+
+
+    </script>
+</body>
+</html>

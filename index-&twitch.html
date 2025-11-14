@@ -143,7 +143,7 @@
         <h3>How to use:</h3>
         <p>Enter a YouTube video ID, YouTube URL, Twitch channel name, Twitch clip URL, or Twitch VOD URL, then select the platform (YouTube/Twitch).</p>
         <p>Add the video/channel ID at the end of the URL after the question mark:</p>
-        <div class="example">siteUrl/?47DewsPXI84 (for YouTube)</div>
+        <div class="example">siteUrl/?MrJXtHG1D0E (for YouTube)</div>
         <div class="example">siteUrl/?monstercat (for Twitch channel)</div>
         <p>You can also copy the current URL after loading a video and share it - the content will automatically load when the link is opened.</p>
         <br>
@@ -198,7 +198,7 @@
         if (type === 'youtube') {
             youtubeBtn.classList.add('active');
             twitchBtn.classList.remove('active');
-            document.getElementById('videoInput').placeholder = "Enter YouTube video ID (e.g.: 47DewsPXI84)";
+            document.getElementById('videoInput').placeholder = "Enter YouTube video ID (e.g.: MrJXtHG1D0E)";
         } else if (type === 'twitch') {
             twitchBtn.classList.add('active');
             youtubeBtn.classList.remove('active');
