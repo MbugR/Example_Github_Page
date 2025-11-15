@@ -281,7 +281,7 @@
             }
         } else {
             // Handle YouTube embeds
-            let youtubeUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoInfo.videoId)}?rel=1`;
+            let youtubeUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoInfo.videoId)}?rel=0`;
             if (videoInfo.startTime !== null) {
                 youtubeUrl += `&start=${videoInfo.startTime}`;
             }
