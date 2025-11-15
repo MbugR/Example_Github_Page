@@ -172,7 +172,7 @@
         const { videoId: actualVideoId, startTime } = extractVideoInfo(videoId);
         if (!actualVideoId) return;
 
-        let embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(actualVideoId)}?rel=0`;
+        let embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(actualVideoId)}?rel=0?iv_load_policy=3?disablekb=1?cc_load_policy=0?autoplay=0`;
         if (startTime !== null) {
         embedUrl += `&start=${startTime}`;
         }
