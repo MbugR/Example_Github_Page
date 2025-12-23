@@ -17,6 +17,7 @@
             padding: 0 15px;
             background-color: #0a1929;
             color: #e6f7ff;
+            position: relative;
         }
 
         .header {
@@ -126,9 +127,75 @@
         ul, ol {
             color: #bbdefb;
         }
+
+        .video-list-container {
+            position: absolute;
+            top: 20px;
+            right: 15px;
+            z-index: 10;
+        }
+
+        .video-list-toggle-button {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #0288d1, #0069c0);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .video-list-toggle-button:hover {
+            background: linear-gradient(135deg, #0277bd, #0059a0);
+            box-shadow: 0 4px 8px rgba(2, 136, 209, 0.3);
+        }
+
+        .default-video-list {
+            display: none; /* Hidden by default */
+            position: absolute;
+            background-color: #0c2a4d;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            list-style-type: none; /* Remove bullet points */
+            padding: 0;
+            margin-top: 5px;
+            border: 1px solid #1a3a5f;
+            right: 0; /* Align with the toggle button */
+            left: auto;
+        }
+
+        .default-video-list li {
+            color: #e6f7ff;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            cursor: pointer;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+
+        .default-video-list li:hover {
+            background-color: #1a3a5f;
+        }
+
+        /* Keep this for hover effect if desired, or rely solely on JS for click */
+        /* .video-list-container:hover .default-video-list {
+            display: block;
+        } */
     </style>
 </head>
 <body>
+    <div class="video-list-container">
+        <button id="toggleVideoList" class="video-list-toggle-button">Video List</button>
+        <ul id="defaultVideoList" class="default-video-list">
+            <li onclick="loadVideoById('xJRvG1oN_Jg')">1.0 TRAILER SOUNTRACK EXTENDED</li>
+            <li onclick="loadVideoById('A4MyI1gON9U')">0.16 TRAILER SOUNTRACK EXTENDED</li>
+            <li onclick="loadVideoById('QqMTHKdJcqM')">0.15 TRAILER SOUNTRACK EXTENDED</li>
+            <li onclick="loadVideoById('XhGwzAvkWXU')">0.13.5 TRAILER SOUNTRACK EXTENDED</li>
+            <li onclick="loadVideoById('aYCMfmiuBqg')">Unison Uzun</li>
+            <li onclick="loadVideoById('YWqXh1xii64')">brainworm</li>
+        </ul>
+    </div>
     <div class="header">
         <h1>Embed YouTube Player</h1>
         <p>Enter a YouTube video ID below or add it as a URL parameter</p>
@@ -137,8 +204,6 @@
     <div class="controls">
         <input type="text" id="videoInput" placeholder="Enter YouTube video ID (e.g.: MrJXtHG1D0E)">
         <button onclick="loadVideo()">Load</button>
-        <button onclick="loadDefault()">Default Video</button>
-        <button onclick="loadDefault2()">Default2 Video</button>
     </div>
 
     <div class="iframe-container">
@@ -234,22 +299,33 @@
         }
         }
 
-        function loadDefault() {
-        const defaultVideoId = 'aYCMfmiuBqg';
-        document.getElementById('videoInput').value = defaultVideoId;
-        loadVideoById(defaultVideoId);
-        }
-
-        function loadDefault2() {
-        const default2VideoId = 'YWqXh1xii64';
-        document.getElementById('videoInput').value = default2VideoId;
-        loadVideoById(default2VideoId);
-        }
-
         document.getElementById('videoInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
         loadVideo();
         }
+        });
+
+        document.getElementById('toggleVideoList').addEventListener('click', function(event) {
+            const list = document.getElementById('defaultVideoList');
+            if (list.style.display === 'block') {
+                list.style.display = 'none';
+            } else {
+                list.style.display = 'block';
+            }
+            event.stopPropagation(); // Prevent the window click listener from closing it immediately
+        });
+
+        // Close the dropdown if the user clicks outside of it
+        window.addEventListener('click', function(event) {
+            if (!event.target.matches('.video-list-toggle-button')) {
+                const dropdowns = document.getElementsByClassName('default-video-list');
+                for (let i = 0; i < dropdowns.length; i++) {
+                    const openDropdown = dropdowns[i];
+                    if (openDropdown.style.display === 'block') {
+                        openDropdown.style.display = 'none';
+                    }
+                }
+            }
         });
     </script>
 </body>
