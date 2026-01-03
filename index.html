@@ -44,7 +44,7 @@
             background: #0c2135;
         }
 
-        iframe {
+        #dynamicFrame {
             position: absolute;
             top: 0;
             left: 0;
@@ -145,43 +145,50 @@
             transition: background 0.3s;
         }
 
-        .video-list-toggle-button:hover {
-            background: linear-gradient(135deg, #0277bd, #0059a0);
-            box-shadow: 0 4px 8px rgba(2, 136, 209, 0.3);
-        }
+            .video-list-toggle-button:hover {
+                background: linear-gradient(135deg, #0277bd, #0059a0);
+                box-shadow: 0 4px 8px rgba(2, 136, 209, 0.3);
+            }
 
         .default-video-list {
-            display: none; /* Hidden by default */
+            display: none;
             position: absolute;
             background-color: #0c2a4d;
             min-width: 160px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1;
-            list-style-type: none; /* Remove bullet points */
+            list-style-type: none;
             padding: 0;
             margin-top: 5px;
             border: 1px solid #1a3a5f;
-            right: 0; /* Align with the toggle button */
+            right: 0;
             left: auto;
         }
 
-        .default-video-list li {
-            color: #e6f7ff;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            cursor: pointer;
-            white-space: nowrap; /* Prevent text wrapping */
-        }
+            .default-video-list li {
+                color: #e6f7ff;
+                padding: 12px 16px;
+                text-decoration: none;
+                display: block;
+                cursor: pointer;
+                white-space: nowrap;
+            }
 
-        .default-video-list li:hover {
-            background-color: #1a3a5f;
-        }
+                .default-video-list li:hover {
+                    background-color: #1a3a5f;
+                }
 
-        /* Keep this for hover effect if desired, or rely solely on JS for click */
-        /* .video-list-container:hover .default-video-list {
-            display: block;
-        } */
+        .progress-indicator {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: rgba(79, 195, 247, 0.8);
+            color: #0a1929;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -205,7 +212,7 @@
             <li onclick="loadVideoById('YtF6jiLxc88')">On-lyne - "PARTY OF YOUR LIFETIME"</li>
             <li onclick="loadVideoById('aYCMfmiuBqg')">Uzun - Unison</li>
             <li onclick="loadVideoById('n0UbqkDpATc')">Uzun - Synthwave</li>
-			<li onclick="loadVideoById('K_7K7v2KGYU')">Mittsies - Titanium</li>
+            <li onclick="loadVideoById('K_7K7v2KGYU')">Mittsies - Titanium</li>
             <li onclick="loadVideoById('LpmKr4ZaWFw')">Ooyy - HAYAT</li>
             <li onclick="loadVideoById('MrJXtHG1D0E')">Ooyy - CALLING</li>
             <li onclick="loadVideoById('9FHxJDPyl74')">Asphalt 8 soundtracks</li>
@@ -228,8 +235,7 @@
     </div>
 
     <div class="iframe-container">
-        <iframe id="dynamicFrame" src="about:blank" allowfullscreen sandbox="allow-scripts allow-same-origin"></iframe>
-        <!--allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share">-->
+        <div id="dynamicFrame"></div>
     </div>
 
     <div class="instructions">
@@ -237,6 +243,7 @@
         <p>Add the video ID at the end of the URL after the question mark:</p>
         <div class="example">siteUrl/?MrJXtHG1D0E</div>
         <p>You can also copy the current URL after loading a video and share it - the video will automatically load when the link is opened.</p>
+        <p><strong>New:</strong> Your watching progress is automatically saved! Return to any video to continue where you left off.</p>
         <br>
         <p>javascript:(function(){const v=new URL(location.href).searchParams.get('v');if(!v)return;window.location.href=`https://mbugr.github.io/Example_Github_Page/?${v}`})();</p>
         <br>
@@ -247,9 +254,14 @@
         </ul>
     </div>
 
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-        if (window.location.search) {
+        let player;
+        let currentVideoId = null;
+        let saveInterval;
+
+        function onYouTubeIframeAPIReady() {
+        const urlParams = new URLSearchParams(window.location.search);
         const input = window.location.search.substring(1).trim();
         if (input) {
         const { videoId, startTime } = extractVideoInfo(input);
@@ -259,6 +271,40 @@
         }
         }
         }
+
+        function getSavedTime(videoId) {
+        const saved = localStorage.getItem(`yt_time_${videoId}`);
+        return saved ? parseInt(saved) : 0;
+        }
+
+        function saveCurrentTime() {
+        if (player && currentVideoId && typeof player.getCurrentTime === 'function') {
+        try {
+        const currentTime = Math.floor(player.getCurrentTime());
+        if (currentTime > 0) {
+        localStorage.setItem(`yt_time_${currentVideoId}`, currentTime);
+        }
+        } catch (e) {
+        // Ignore errors
+        }
+        }
+        }
+
+        function startAutoSave() {
+        if (saveInterval) clearInterval(saveInterval);
+        saveInterval = setInterval(saveCurrentTime, 5000);
+        }
+
+        function stopAutoSave() {
+        if (saveInterval) {
+        clearInterval(saveInterval);
+        saveInterval = null;
+        }
+        }
+
+        window.addEventListener('beforeunload', () => {
+        saveCurrentTime();
+        stopAutoSave();
         });
 
         function extractVideoInfo(input) {
@@ -294,16 +340,51 @@
         const { videoId: actualVideoId, startTime } = extractVideoInfo(videoId);
         if (!actualVideoId) return;
 
-        let embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(actualVideoId)}?rel=0&iv_load_policy=3&disablekb=0&cc_load_policy=0&autoplay=0`;
-        if (startTime !== null) {
-        embedUrl += `&start=${startTime}`;
+        currentVideoId = actualVideoId;
+
+        const savedTime = getSavedTime(actualVideoId);
+        const timeToStart = startTime !== null ? startTime : savedTime;
+
+        if (player) {
+        stopAutoSave();
+        player.destroy();
         }
 
-        const frame = document.getElementById('dynamicFrame');
-        frame.src = embedUrl;
+        player = new YT.Player('dynamicFrame', {
+        height: '100%',
+        width: '100%',
+        videoId: actualVideoId,
+        playerVars: {
+        'rel': 0,
+        'iv_load_policy': 3,
+        'disablekb': 0,
+        'cc_load_policy': 0,
+        'autoplay': 0,
+        'start': timeToStart
+        },
+        events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+        }
+        });
 
         const newUrl = `${window.location.origin}${window.location.pathname}?${videoId}`;
         history.replaceState({ videoId: videoId }, '', newUrl);
+        }
+
+        function onPlayerReady(event) {
+        startAutoSave();
+        }
+
+        function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING) {
+        startAutoSave();
+        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+        saveCurrentTime();
+        if (event.data === YT.PlayerState.ENDED) {
+        localStorage.removeItem(`yt_time_${currentVideoId}`);
+        }
+        }
         }
 
         function loadVideo() {
@@ -327,28 +408,26 @@
         });
 
         document.getElementById('toggleVideoList').addEventListener('click', function(event) {
-            const list = document.getElementById('defaultVideoList');
-            if (list.style.display === 'block') {
-                list.style.display = 'none';
-            } else {
-                list.style.display = 'block';
-            }
-            event.stopPropagation(); // Prevent the window click listener from closing it immediately
+        const list = document.getElementById('defaultVideoList');
+        if (list.style.display === 'block') {
+        list.style.display = 'none';
+        } else {
+        list.style.display = 'block';
+        }
+        event.stopPropagation();
         });
 
-        // Close the dropdown if the user clicks outside of it
         window.addEventListener('click', function(event) {
-            if (!event.target.matches('.video-list-toggle-button')) {
-                const dropdowns = document.getElementsByClassName('default-video-list');
-                for (let i = 0; i < dropdowns.length; i++) {
-                    const openDropdown = dropdowns[i];
-                    if (openDropdown.style.display === 'block') {
-                        openDropdown.style.display = 'none';
-                    }
-                }
-            }
+        if (!event.target.matches('.video-list-toggle-button')) {
+        const dropdowns = document.getElementsByClassName('default-video-list');
+        for (let i = 0; i < dropdowns.length; i++) {
+        const openDropdown = dropdowns[i];
+        if (openDropdown.style.display === 'block') {
+        openDropdown.style.display = 'none';
+        }
+        }
+        }
         });
     </script>
 </body>
 </html>
-
