@@ -163,6 +163,8 @@
             border: 1px solid #1a3a5f;
             right: 0;
             left: auto;
+            max-height: 70vh;
+            overflow-y: auto;
         }
 
             .default-video-list li {
@@ -254,21 +256,54 @@
         </ul>
     </div>
 
-    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         let player;
         let currentVideoId = null;
         let saveInterval;
+        let apiReady = false;
+        let pendingVideoId = null;
 
-        function onYouTubeIframeAPIReady() {
-        const urlParams = new URLSearchParams(window.location.search);
+        // Функция инициализации плеера из URL
+        function initFromUrl() {
         const input = window.location.search.substring(1).trim();
         if (input) {
-        const { videoId, startTime } = extractVideoInfo(input);
+        const { videoId } = extractVideoInfo(input);
         if (videoId) {
-        loadVideoById(input);
         document.getElementById('videoInput').value = videoId;
+        if (apiReady) {
+        loadVideoById(input);
+        } else {
+        pendingVideoId = input;
         }
+        }
+        }
+        }
+
+        // Callback YouTube API
+        function onYouTubeIframeAPIReady() {
+        console.log('YouTube API Ready');
+        apiReady = true;
+
+        // Если есть отложенное видео - загружаем
+        if (pendingVideoId) {
+        loadVideoById(pendingVideoId);
+        pendingVideoId = null;
+        }
+        }
+
+        // Проверка готовности API с интервалом (для случая кеширования)
+        function waitForApi() {
+        if (typeof YT !== 'undefined' && typeof YT.Player !== 'undefined') {
+        if (!apiReady) {
+        console.log('YouTube API Ready (from cache check)');
+        apiReady = true;
+        if (pendingVideoId) {
+        loadVideoById(pendingVideoId);
+        pendingVideoId = null;
+        }
+        }
+        } else {
+        setTimeout(waitForApi, 100);
         }
         }
 
@@ -331,11 +366,23 @@
         }
         }
 
+        // Проверяем, что это валидный ID (11 символов)
+        if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {
+        return { videoId: input, startTime: null };
+        }
+
         return { videoId: input, startTime: null };
         }
 
         function loadVideoById(videoId) {
         if (!videoId) return;
+
+        // Проверяем готовность API
+        if (!apiReady || typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+        console.log('API not ready, queuing video:', videoId);
+        pendingVideoId = videoId;
+        return;
+        }
 
         const { videoId: actualVideoId, startTime } = extractVideoInfo(videoId);
         if (!actualVideoId) return;
@@ -347,8 +394,22 @@
 
         if (player) {
         stopAutoSave();
+        try {
         player.destroy();
+        } catch (e) {
+        console.log('Error destroying player:', e);
         }
+        }
+
+        // Пересоздаём контейнер
+        const container = document.querySelector('.iframe-container');
+        const oldFrame = document.getElementById('dynamicFrame');
+        if (oldFrame) {
+        oldFrame.remove();
+        }
+        const newFrame = document.createElement('div');
+        newFrame.id = 'dynamicFrame';
+        container.appendChild(newFrame);
 
         player = new YT.Player('dynamicFrame', {
         height: '100%',
@@ -364,16 +425,22 @@
         },
         events: {
         'onReady': onPlayerReady,
-        'onStateChange': onPlayerStateChange
+        'onStateChange': onPlayerStateChange,
+        'onError': onPlayerError
         }
         });
 
-        const newUrl = `${window.location.origin}${window.location.pathname}?${videoId}`;
-        history.replaceState({ videoId: videoId }, '', newUrl);
+        const newUrl = `${window.location.origin}${window.location.pathname}?${actualVideoId}`;
+        history.replaceState({ videoId: actualVideoId }, '', newUrl);
         }
 
         function onPlayerReady(event) {
+        console.log('Player ready');
         startAutoSave();
+        }
+
+        function onPlayerError(event) {
+        console.log('Player error:', event.data);
         }
 
         function onPlayerStateChange(event) {
@@ -390,7 +457,7 @@
         function loadVideo() {
         const input = document.getElementById('videoInput').value.trim();
         if (input) {
-        const { videoId, startTime } = extractVideoInfo(input);
+        const { videoId } = extractVideoInfo(input);
         if (videoId) {
         loadVideoById(input);
         } else {
@@ -428,6 +495,16 @@
         }
         }
         });
+
+        // Инициализация при загрузке DOM
+        document.addEventListener('DOMContentLoaded', function() {
+        // Сначала парсим URL и ставим в очередь
+        initFromUrl();
+        // Запускаем проверку API
+        waitForApi();
+        });
     </script>
+    <!-- Загружаем API после определения всех функций -->
+    <script src="https://www.youtube.com/iframe_api"></script>
 </body>
 </html>
