@@ -1,0 +1,822 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Embed YouTube Player</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZmMDAwMCIvPjxwb2x5Z29uIHBvaW50cz0iNDAgMzAgNzAgNTAgNDAgNzAiIGZpbGw9IiNmZmZmZmYiLz48L3N2Zz4=" type="image/svg+xml">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+            background-color: #0a1929;
+            color: #e6f7ff;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+            .header h1 {
+                color: #4fc3f7;
+            }
+
+            .header p {
+                color: #81d4fa;
+            }
+
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%;
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 100, 200, 0.3);
+            background: #0c2135;
+        }
+
+        #dynamicFrame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            background: #0c2a4d;
+            padding: 15px;
+        }
+
+        #videoInput {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px;
+            border: 1px solid #1a3a5f;
+            background-color: #0a1e36;
+            color: #e6f7ff;
+            font-size: 16px;
+        }
+
+            #videoInput:focus {
+                outline: none;
+                border-color: #4fc3f7;
+                box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.2);
+            }
+
+        button {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #0288d1, #0069c0);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+            button:hover {
+                background: linear-gradient(135deg, #0277bd, #0059a0);
+                box-shadow: 0 4px 8px rgba(2, 136, 209, 0.3);
+            }
+
+        .instructions {
+            background: #0c2a4d;
+            padding: 15px;
+            margin-top: 20px;
+            line-height: 1.5;
+            border-left: 3px solid #4fc3f7;
+        }
+
+            .instructions h3 {
+                color: #4fc3f7;
+                margin-bottom: 10px;
+            }
+
+        .example {
+            font-family: monospace;
+            background: #0a1e36;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border: 1px solid #1a3a5f;
+        }
+
+        a {
+            color: #29b6f6;
+            text-decoration: none;
+        }
+
+            a:hover {
+                color: #0288d1;
+                text-decoration: underline;
+            }
+
+        ul, ol {
+            color: #bbdefb;
+        }
+
+        .video-list-container {
+            position: absolute;
+            top: 20px;
+            right: 15px;
+            z-index: 10;
+        }
+
+        .video-list-toggle-button {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #0288d1, #0069c0);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+            .video-list-toggle-button:hover {
+                background: linear-gradient(135deg, #0277bd, #0059a0);
+                box-shadow: 0 4px 8px rgba(2, 136, 209, 0.3);
+            }
+
+        .default-video-list {
+            display: none;
+            position: absolute;
+            background-color: #0c2a4d;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            list-style-type: none;
+            padding: 0;
+            margin-top: 5px;
+            border: 1px solid #1a3a5f;
+            right: 0;
+            left: auto;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+            .default-video-list li {
+                color: #e6f7ff;
+                padding: 12px 16px;
+                text-decoration: none;
+                display: block;
+                cursor: pointer;
+                white-space: nowrap;
+            }
+
+                .default-video-list li:hover {
+                    background-color: #1a3a5f;
+                }
+
+        .progress-indicator {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: rgba(79, 195, 247, 0.8);
+            color: #0a1929;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #editPlaylistBtn {
+            display: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .edit-modal-content {
+            background: #0c2a4d;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .edit-modal h3 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+        }
+
+        .edit-modal textarea {
+            width: 100%;
+            height: 300px;
+            background: #0a1e36;
+            color: #e6f7ff;
+            border: 1px solid #1a3a5f;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .edit-modal-buttons {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .edit-modal-output {
+            margin-top: 15px;
+        }
+
+        .edit-modal-output textarea {
+            height: 100px;
+            background: #1a3a5f;
+        }
+
+        .edit-modal-output p {
+            color: #81d4fa;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-list-container">
+        <button id="toggleVideoList" class="video-list-toggle-button">Video List</button>
+        <button id="editPlaylistBtn">Edit</button>
+        <ul id="defaultVideoList" class="default-video-list"></ul>
+    </div>
+
+    <div id="editModal" class="edit-modal">
+        <div class="edit-modal-content">
+            <h3>Edit Playlist</h3>
+            <textarea id="playlistEditor" placeholder="Loading..."></textarea>
+            <div class="edit-modal-buttons">
+                <button id="encryptBtn">Encrypt & Copy</button>
+                <button id="closeModalBtn">Close</button>
+            </div>
+            <div class="edit-modal-output">
+                <p>Encrypted result (copy to playlist.txt):</p>
+                <textarea id="encryptedOutput" readonly placeholder="Click 'Encrypt & Copy' to generate"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="header">
+        <h1>Embed YouTube Player</h1>
+        <p>Enter a YouTube video ID below or add it as a URL parameter</p>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="videoInput" placeholder="Enter YouTube video ID (e.g.: MrJXtHG1D0E)">
+        <button onclick="loadVideo()">Load</button>
+    </div>
+
+    <div class="iframe-container">
+        <div id="dynamicFrame"></div>
+    </div>
+
+    <div class="instructions">
+        <h3>How to use:</h3>
+        <p>Add the video ID at the end of the URL after the question mark:</p>
+        <div class="example">siteUrl/?MrJXtHG1D0E</div>
+        <p>You can also copy the current URL after loading a video and share it - the video will automatically load when the link is opened.</p>
+        <p><strong>New:</strong> Your watching progress is automatically saved! Return to any video to continue where you left off.</p>
+        <br>
+        <p>javascript:(function(){const v=new URL(location.href).searchParams.get('v');if(!v)return;window.location.href=`https://mbugr.github.io/Example_Github_Page/?${v}`})();</p>
+        <br>
+        <h3>Recommended Extensions:</h3>
+        <ul>
+            <li><a href="https://ublockorigin.com/" target="_blank">uBlock Origin</a> - For ad blocking and improved browsing experience</li>
+            <li><a href="https://sponsor.ajay.app/" target="_blank">SponsorBlock</a> - Skip sponsored content in YouTube videos automatically</li>
+        </ul>
+    </div>
+
+    <script>
+        let player;
+        let currentVideoId = null;
+        let saveInterval;
+        let apiReady = false;
+        let pendingVideoId = null;
+        const defaultTitle = 'Embed YouTube Player';
+
+        // Функция обновления заголовка вкладки
+        function updatePageTitle(title) {
+        if (title) {
+        document.title = `▶ ${title}`;
+        } else {
+        document.title = defaultTitle;
+        }
+        }
+
+        // Функция получения названия видео с повторными попытками
+        function fetchVideoTitle() {
+        if (!player || typeof player.getVideoData !== 'function') return;
+
+        try {
+        const videoData = player.getVideoData();
+        if (videoData && videoData.title) {
+        updatePageTitle(videoData.title);
+        } else {
+        // Название может быть недоступно сразу, пробуем через 500мс
+        setTimeout(fetchVideoTitle, 500);
+        }
+        } catch (e) {
+        console.log('Error getting video data:', e);
+        }
+        }
+
+        // Функция инициализации плеера из URL
+        function initFromUrl() {
+        const input = window.location.search.substring(1).trim();
+        if (input) {
+        const { videoId } = extractVideoInfo(input);
+        if (videoId) {
+        document.getElementById('videoInput').value = videoId;
+        if (apiReady) {
+        loadVideoById(input);
+        } else {
+        pendingVideoId = input;
+        }
+        }
+        }
+        }
+
+        // Callback YouTube API
+        function onYouTubeIframeAPIReady() {
+        console.log('YouTube API Ready');
+        apiReady = true;
+
+        // Если есть отложенное видео - загружаем
+        if (pendingVideoId) {
+        loadVideoById(pendingVideoId);
+        pendingVideoId = null;
+        }
+        }
+
+        // Проверка готовности API с интервалом (для случая кеширования)
+        function waitForApi() {
+        if (typeof YT !== 'undefined' && typeof YT.Player !== 'undefined') {
+        if (!apiReady) {
+        console.log('YouTube API Ready (from cache check)');
+        apiReady = true;
+        if (pendingVideoId) {
+        loadVideoById(pendingVideoId);
+        pendingVideoId = null;
+        }
+        }
+        } else {
+        setTimeout(waitForApi, 100);
+        }
+        }
+
+        function getSavedTime(videoId) {
+        const saved = localStorage.getItem(`yt_time_${videoId}`);
+        return saved ? parseInt(saved) : 0;
+        }
+
+        function saveCurrentTime() {
+        if (player && currentVideoId && typeof player.getCurrentTime === 'function') {
+        try {
+        const currentTime = Math.floor(player.getCurrentTime());
+        if (currentTime > 0) {
+        localStorage.setItem(`yt_time_${currentVideoId}`, currentTime);
+        }
+        } catch (e) {
+        // Ignore errors
+        }
+        }
+        }
+
+        function startAutoSave() {
+        if (saveInterval) clearInterval(saveInterval);
+        saveInterval = setInterval(saveCurrentTime, 5000);
+        }
+
+        function stopAutoSave() {
+        if (saveInterval) {
+        clearInterval(saveInterval);
+        saveInterval = null;
+        }
+        }
+
+        window.addEventListener('beforeunload', () => {
+        saveCurrentTime();
+        stopAutoSave();
+        });
+
+        function extractVideoInfo(input) {
+        const idTimeRegex = /^([a-zA-Z0-9_-]{11})[?&](?:t|start)=(\d+)$/;
+        const idTimeMatch = input.match(idTimeRegex);
+
+        if (idTimeMatch) {
+        const videoId = idTimeMatch[1];
+        const startTime = parseInt(idTimeMatch[2]);
+        return { videoId, startTime };
+        }
+
+        if (input.includes('youtube.com') || input.includes('youtu.be')) {
+        const youtubeRegex = /(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        const timeRegex = /[?&](?:t|start)=(\d+)/;
+
+        const videoIdMatch = input.match(youtubeRegex);
+        const timeMatch = input.match(timeRegex);
+
+        if (videoIdMatch) {
+        const videoId = videoIdMatch[1];
+        const startTime = timeMatch ? parseInt(timeMatch[1]) : null;
+        return { videoId, startTime };
+        }
+        }
+
+        // Проверяем, что это валидный ID (11 символов)
+        if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {
+        return { videoId: input, startTime: null };
+        }
+
+        return { videoId: input, startTime: null };
+        }
+
+        function loadVideoById(videoId) {
+        if (!videoId) return;
+
+        // Проверяем готовность API
+        if (!apiReady || typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+        console.log('API not ready, queuing video:', videoId);
+        pendingVideoId = videoId;
+        return;
+        }
+
+        const { videoId: actualVideoId, startTime } = extractVideoInfo(videoId);
+        if (!actualVideoId) return;
+
+        currentVideoId = actualVideoId;
+
+        // Временно показываем ID пока загружается название
+        updatePageTitle(`Loading... (${actualVideoId})`);
+
+        const savedTime = getSavedTime(actualVideoId);
+        const timeToStart = startTime !== null ? startTime : savedTime;
+
+        if (player) {
+        stopAutoSave();
+        try {
+        player.destroy();
+        } catch (e) {
+        console.log('Error destroying player:', e);
+        }
+        }
+
+        // Пересоздаём контейнер
+        const container = document.querySelector('.iframe-container');
+        const oldFrame = document.getElementById('dynamicFrame');
+        if (oldFrame) {
+        oldFrame.remove();
+        }
+        const newFrame = document.createElement('div');
+        newFrame.id = 'dynamicFrame';
+        container.appendChild(newFrame);
+
+        player = new YT.Player('dynamicFrame', {
+        height: '100%',
+        width: '100%',
+        videoId: actualVideoId,
+        playerVars: {
+        'rel': 0,
+        'iv_load_policy': 3,
+        'disablekb': 0,
+        'cc_load_policy': 0,
+        'autoplay': 0,
+        'start': timeToStart
+        },
+        events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange,
+        'onError': onPlayerError
+        }
+        });
+
+        const newUrl = `${window.location.origin}${window.location.pathname}?${actualVideoId}`;
+        history.replaceState({ videoId: actualVideoId }, '', newUrl);
+        }
+
+        function onPlayerReady(event) {
+        console.log('Player ready');
+        startAutoSave();
+        // Получаем название видео
+        fetchVideoTitle();
+        }
+
+        function onPlayerError(event) {
+        console.log('Player error:', event.data);
+        updatePageTitle(`Error loading video`);
+        }
+
+        function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.PLAYING) {
+        startAutoSave();
+        // Пробуем обновить название при воспроизведении (на случай если не получили раньше)
+        fetchVideoTitle();
+        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+        saveCurrentTime();
+        if (event.data === YT.PlayerState.ENDED) {
+        localStorage.removeItem(`yt_time_${currentVideoId}`);
+        }
+        }
+        }
+
+        function loadVideo() {
+        const input = document.getElementById('videoInput').value.trim();
+        if (input) {
+        const { videoId } = extractVideoInfo(input);
+        if (videoId) {
+        loadVideoById(input);
+        } else {
+        alert('Please enter a valid YouTube video ID or URL');
+        }
+        } else {
+        alert('Please enter a YouTube video ID or URL');
+        }
+        }
+
+        document.getElementById('videoInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+        loadVideo();
+        }
+        });
+
+        // Плейлист загружается из внешнего файла
+        let encryptedPlaylist = null;
+        let playlistDecrypted = null;
+        let currentPassword = null;
+
+        // Загрузка зашифрованного плейлиста из файла
+        async function loadEncryptedPlaylist() {
+            try {
+                const response = await fetch('playlist.txt?v=' + Date.now());
+                if (response.ok) {
+                    encryptedPlaylist = await response.text();
+                    return true;
+                }
+            } catch (e) {
+                console.log('Error loading playlist:', e);
+            }
+            return false;
+        }
+
+        // Функция расшифровки плейлиста
+        async function decryptPlaylist(password, encrypted = encryptedPlaylist) {
+            try {
+                const [metaB64, encryptedB64] = encrypted.trim().split('.');
+                const metaBytes = Uint8Array.from(atob(metaB64), c => c.charCodeAt(0));
+
+                const salt = metaBytes.slice(0, 16);
+                const iv = metaBytes.slice(16, 28);
+                const authTag = metaBytes.slice(28, 44);
+
+                const encryptedBytes = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
+                const ciphertext = new Uint8Array(encryptedBytes.length + 16);
+                ciphertext.set(encryptedBytes);
+                ciphertext.set(authTag, encryptedBytes.length);
+
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    new TextEncoder().encode(password),
+                    'PBKDF2',
+                    false,
+                    ['deriveKey']
+                );
+
+                const key = await crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                    keyMaterial,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['decrypt']
+                );
+
+                const decrypted = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv },
+                    key,
+                    ciphertext
+                );
+
+                return JSON.parse(new TextDecoder().decode(decrypted));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Функция шифрования плейлиста
+        async function encryptPlaylist(password, data) {
+            try {
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+
+                const keyMaterial = await crypto.subtle.importKey(
+                    'raw',
+                    new TextEncoder().encode(password),
+                    'PBKDF2',
+                    false,
+                    ['deriveKey']
+                );
+
+                const key = await crypto.subtle.deriveKey(
+                    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                    keyMaterial,
+                    { name: 'AES-GCM', length: 256 },
+                    false,
+                    ['encrypt']
+                );
+
+                const encoded = new TextEncoder().encode(JSON.stringify(data));
+                const encrypted = await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv },
+                    key,
+                    encoded
+                );
+
+                const encryptedArray = new Uint8Array(encrypted);
+                const ciphertext = encryptedArray.slice(0, -16);
+                const authTag = encryptedArray.slice(-16);
+
+                const meta = new Uint8Array(44);
+                meta.set(salt, 0);
+                meta.set(iv, 16);
+                meta.set(authTag, 28);
+
+                const metaB64 = btoa(String.fromCharCode(...meta));
+                const encryptedB64 = btoa(String.fromCharCode(...ciphertext));
+
+                return metaB64 + '.' + encryptedB64;
+            } catch (e) {
+                console.log('Encryption error:', e);
+                return null;
+            }
+        }
+
+        // Функция отображения плейлиста
+        function renderPlaylist(playlist) {
+            const list = document.getElementById('defaultVideoList');
+            list.innerHTML = '';
+            playlist.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = item.name;
+                li.onclick = () => loadVideoById(item.id);
+                list.appendChild(li);
+            });
+        }
+
+        // Показать кнопку Edit
+        function showEditButton() {
+            document.getElementById('editPlaylistBtn').style.display = 'inline-block';
+        }
+
+        async function checkPlaylistAccess() {
+            // Загружаем плейлист если ещё не загружен
+            if (!encryptedPlaylist) {
+                await loadEncryptedPlaylist();
+            }
+
+            // Если уже расшифровано - сразу показываем
+            if (playlistDecrypted) {
+                return true;
+            }
+
+            // Проверяем сохранённый пароль
+            const savedPassword = localStorage.getItem('playlist_key');
+            if (savedPassword) {
+                const playlist = await decryptPlaylist(savedPassword);
+                if (playlist) {
+                    playlistDecrypted = playlist;
+                    currentPassword = savedPassword;
+                    renderPlaylist(playlist);
+                    showEditButton();
+                    return true;
+                }
+                localStorage.removeItem('playlist_key');
+            }
+
+            // Запрашиваем пароль
+            const password = prompt('Enter password to access playlist:');
+            if (!password) return false;
+
+            const playlist = await decryptPlaylist(password);
+            if (playlist) {
+                playlistDecrypted = playlist;
+                currentPassword = password;
+                localStorage.setItem('playlist_key', password);
+                renderPlaylist(playlist);
+                showEditButton();
+                return true;
+            } else {
+                alert('Wrong password');
+                return false;
+            }
+        }
+
+        // Edit Modal функционал
+        document.getElementById('editPlaylistBtn').addEventListener('click', function(event) {
+            event.stopPropagation();
+            if (!playlistDecrypted) return;
+
+            document.getElementById('playlistEditor').value = JSON.stringify(playlistDecrypted, null, 2);
+            document.getElementById('encryptedOutput').value = '';
+            document.getElementById('editModal').style.display = 'flex';
+        });
+
+        document.getElementById('closeModalBtn').addEventListener('click', function() {
+            document.getElementById('editModal').style.display = 'none';
+        });
+
+        document.getElementById('encryptBtn').addEventListener('click', async function() {
+            try {
+                const jsonText = document.getElementById('playlistEditor').value;
+                const data = JSON.parse(jsonText);
+
+                if (!Array.isArray(data)) {
+                    alert('Invalid format: must be an array');
+                    return;
+                }
+
+                const encrypted = await encryptPlaylist(currentPassword, data);
+                if (encrypted) {
+                    document.getElementById('encryptedOutput').value = encrypted;
+                    navigator.clipboard.writeText(encrypted);
+                    alert('Encrypted and copied to clipboard! Paste into playlist.txt');
+
+                    // Обновляем текущий плейлист
+                    playlistDecrypted = data;
+                    renderPlaylist(data);
+                }
+            } catch (e) {
+                alert('Invalid JSON: ' + e.message);
+            }
+        });
+
+        document.getElementById('editModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                this.style.display = 'none';
+            }
+        });
+
+        document.getElementById('toggleVideoList').addEventListener('click', async function(event) {
+        event.stopPropagation();
+
+        const list = document.getElementById('defaultVideoList');
+        if (list.style.display === 'block') {
+            list.style.display = 'none';
+        } else {
+            const hasAccess = await checkPlaylistAccess();
+            if (hasAccess) {
+                list.style.display = 'block';
+            }
+        }
+        });
+
+        window.addEventListener('click', function(event) {
+        if (!event.target.matches('.video-list-toggle-button')) {
+        const dropdowns = document.getElementsByClassName('default-video-list');
+        for (let i = 0; i < dropdowns.length; i++) {
+        const openDropdown = dropdowns[i];
+        if (openDropdown.style.display === 'block') {
+        openDropdown.style.display = 'none';
+        }
+        }
+        }
+        });
+
+        // Инициализация при загрузке DOM
+        document.addEventListener('DOMContentLoaded', function() {
+        // Сначала парсим URL и ставим в очередь
+        initFromUrl();
+        // Запускаем проверку API
+        waitForApi();
+        });
+    </script>
+    <!-- Загружаем API после определения всех функций -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+</body>
+</html>

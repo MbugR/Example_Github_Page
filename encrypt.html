@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Playlist Encryptor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 0 15px;
+            background-color: #0a1929;
+            color: #e6f7ff;
+        }
+
+        h1 {
+            color: #4fc3f7;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section {
+            background: #0c2a4d;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 3px solid #4fc3f7;
+        }
+
+        .section h3 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #81d4fa;
+        }
+
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #1a3a5f;
+            background-color: #0a1e36;
+            color: #e6f7ff;
+            font-size: 16px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 250px;
+            padding: 10px;
+            border: 1px solid #1a3a5f;
+            background-color: #0a1e36;
+            color: #e6f7ff;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #0288d1, #0069c0);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #0277bd, #0059a0);
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .result {
+            margin-top: 20px;
+        }
+
+        .result textarea {
+            height: 120px;
+            background-color: #1a3a5f;
+        }
+
+        .example {
+            font-family: monospace;
+            background: #0a1e36;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #1a3a5f;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
+        .status.success {
+            background: #1b5e20;
+            color: #a5d6a7;
+        }
+
+        .status.error {
+            background: #b71c1c;
+            color: #ef9a9a;
+        }
+
+        a {
+            color: #29b6f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Playlist Encryptor</h1>
+
+    <div class="section">
+        <h3>Password</h3>
+        <label for="password">Enter encryption password:</label>
+        <input type="password" id="password" placeholder="Your password">
+    </div>
+
+    <div class="section">
+        <h3>Playlist JSON</h3>
+        <label for="playlist">Enter playlist as JSON array:</label>
+        <textarea id="playlist" placeholder='[
+  { "id": "VIDEO_ID", "name": "Video Name" },
+  { "id": "ANOTHER_ID", "name": "Another Video" }
+]'></textarea>
+        <p style="margin-top: 10px; color: #81d4fa; font-size: 14px;">
+            Format: Array of objects with "id" (YouTube video ID) and "name" (display name)
+        </p>
+        <div class="example">[
+  { "id": "dQw4w9WgXcQ", "name": "Rick Astley - Never Gonna Give You Up" },
+  { "id": "9bZkp7q19f0", "name": "PSY - Gangnam Style" }
+]</div>
+    </div>
+
+    <div class="section">
+        <h3>Actions</h3>
+        <div class="buttons">
+            <button id="encryptBtn">Encrypt</button>
+            <button id="decryptBtn">Decrypt (Test)</button>
+            <button id="loadCurrentBtn">Load Current playlist.txt</button>
+        </div>
+
+        <div id="statusMsg"></div>
+
+        <div class="result">
+            <label for="result">Result (copy to playlist.txt):</label>
+            <textarea id="result" readonly placeholder="Encrypted result will appear here..."></textarea>
+            <button id="copyBtn">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Instructions</h3>
+        <ol style="padding-left: 20px; line-height: 1.8;">
+            <li>Enter your password</li>
+            <li>Enter or edit the playlist JSON</li>
+            <li>Click "Encrypt"</li>
+            <li>Copy the result and paste into <code>playlist.txt</code></li>
+            <li>Commit and push to GitHub</li>
+        </ol>
+        <p style="margin-top: 15px;">
+            <a href="index.html">Back to Player</a>
+        </p>
+    </div>
+
+    <script>
+        // Функция шифрования
+        async function encryptPlaylist(password, data) {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+
+            const keyMaterial = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt']
+            );
+
+            const encoded = new TextEncoder().encode(JSON.stringify(data));
+            const encrypted = await crypto.subtle.encrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                encoded
+            );
+
+            const encryptedArray = new Uint8Array(encrypted);
+            const ciphertext = encryptedArray.slice(0, -16);
+            const authTag = encryptedArray.slice(-16);
+
+            const meta = new Uint8Array(44);
+            meta.set(salt, 0);
+            meta.set(iv, 16);
+            meta.set(authTag, 28);
+
+            const metaB64 = btoa(String.fromCharCode(...meta));
+            const encryptedB64 = btoa(String.fromCharCode(...ciphertext));
+
+            return metaB64 + '.' + encryptedB64;
+        }
+
+        // Функция расшифровки
+        async function decryptPlaylist(password, encrypted) {
+            const [metaB64, encryptedB64] = encrypted.trim().split('.');
+            const metaBytes = Uint8Array.from(atob(metaB64), c => c.charCodeAt(0));
+
+            const salt = metaBytes.slice(0, 16);
+            const iv = metaBytes.slice(16, 28);
+            const authTag = metaBytes.slice(28, 44);
+
+            const encryptedBytes = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
+            const ciphertext = new Uint8Array(encryptedBytes.length + 16);
+            ciphertext.set(encryptedBytes);
+            ciphertext.set(authTag, encryptedBytes.length);
+
+            const keyMaterial = await crypto.subtle.importKey(
+                'raw',
+                new TextEncoder().encode(password),
+                'PBKDF2',
+                false,
+                ['deriveKey']
+            );
+
+            const key = await crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+                keyMaterial,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['decrypt']
+            );
+
+            const decrypted = await crypto.subtle.decrypt(
+                { name: 'AES-GCM', iv },
+                key,
+                ciphertext
+            );
+
+            return JSON.parse(new TextDecoder().decode(decrypted));
+        }
+
+        function showStatus(message, isError = false) {
+            const el = document.getElementById('statusMsg');
+            el.className = 'status ' + (isError ? 'error' : 'success');
+            el.textContent = message;
+        }
+
+        // Encrypt button
+        document.getElementById('encryptBtn').addEventListener('click', async () => {
+            const password = document.getElementById('password').value;
+            const playlistText = document.getElementById('playlist').value;
+
+            if (!password) {
+                showStatus('Please enter a password', true);
+                return;
+            }
+
+            try {
+                const data = JSON.parse(playlistText);
+                if (!Array.isArray(data)) {
+                    showStatus('Playlist must be a JSON array', true);
+                    return;
+                }
+
+                const encrypted = await encryptPlaylist(password, data);
+                document.getElementById('result').value = encrypted;
+                showStatus('Encrypted successfully! Copy the result to playlist.txt');
+            } catch (e) {
+                showStatus('Error: ' + e.message, true);
+            }
+        });
+
+        // Decrypt button (for testing)
+        document.getElementById('decryptBtn').addEventListener('click', async () => {
+            const password = document.getElementById('password').value;
+            const encrypted = document.getElementById('result').value || document.getElementById('playlist').value;
+
+            if (!password) {
+                showStatus('Please enter a password', true);
+                return;
+            }
+
+            if (!encrypted.includes('.')) {
+                showStatus('No encrypted data to decrypt. Enter encrypted string or encrypt first.', true);
+                return;
+            }
+
+            try {
+                const decrypted = await decryptPlaylist(password, encrypted);
+                document.getElementById('playlist').value = JSON.stringify(decrypted, null, 2);
+                showStatus('Decrypted successfully! ' + decrypted.length + ' items found.');
+            } catch (e) {
+                showStatus('Decryption failed. Wrong password or corrupted data.', true);
+            }
+        });
+
+        // Load current playlist.txt
+        document.getElementById('loadCurrentBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('playlist.txt?v=' + Date.now());
+                if (response.ok) {
+                    const encrypted = await response.text();
+                    document.getElementById('result').value = encrypted.trim();
+                    showStatus('Loaded playlist.txt. Enter password and click Decrypt to view.');
+                } else {
+                    showStatus('Could not load playlist.txt', true);
+                }
+            } catch (e) {
+                showStatus('Error loading: ' + e.message, true);
+            }
+        });
+
+        // Copy button
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const result = document.getElementById('result').value;
+            if (result) {
+                navigator.clipboard.writeText(result);
+                showStatus('Copied to clipboard!');
+            }
+        });
+    </script>
+</body>
+</html>
